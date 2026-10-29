@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "FduNav",
+    "slug": "fdunav",
+    "scheme": "fdunav",
+    "version": "1.0.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "top.cpjinan.fdunav"
+    },
+    "android": {
+      "package": "top.cpjinan.fdunav"
+    },
+    "web": {
+      "favicon": "./assets/icon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-notifications",
+      "expo-document-picker",
+      "expo-status-bar",
+      "expo-sharing",
+      "expo-web-browser",
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "@preeternal/react-native-cookie-manager"
+    ]
+  }
+}
