@@ -31,7 +31,7 @@ export function extractPdfText(bytes: Uint8Array): Promise<string> {
             () =>
                 new Promise<string>((resolve, reject) => {
                     const jobId = ++id;
-                    const timer = setTimeout(() => finishPdf(jobId), 30000);
+                    const timer = setTimeout(() => finishPdf(jobId), 12000);
                     current = {
                         id: jobId,
                         base64: forge.util.binary.base64.encode(bytes),

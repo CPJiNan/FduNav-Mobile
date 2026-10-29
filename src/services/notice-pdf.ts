@@ -5,7 +5,12 @@ import {fetchNoticeBinary} from './notice-assets';
 export async function readNoticePdfs(detail: NoticeDetail): Promise<NoticeDetail> {
     const contents = [detail.content];
     let failed = detail.attachments.length > 3;
+    const deadline = Date.now() + 25000;
     for (const attachment of detail.attachments.slice(0, 3)) {
+        if (Date.now() > deadline) {
+            failed = true;
+            break;
+        }
         try {
             const {bytes} = await fetchNoticeBinary(attachment.url);
             if (!new TextDecoder().decode(bytes.subarray(0, 1024)).includes('%PDF-')) throw new Error();

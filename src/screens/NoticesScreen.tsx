@@ -10,6 +10,7 @@ import {noticeKey} from '../model';
 import {defaultSources} from '../shared/sources';
 import {fetchDetail} from '../services/network';
 import type {NoticeRelevanceChoice} from '../shared/notices';
+import {shareBinary} from '../services/files';
 
 const relevanceText = (value: string | null | undefined) =>
     value === 'related' ? '[@与我有关]' : value === 'maybe' ? '[@可能有关]' : '';
@@ -330,6 +331,7 @@ export function NoticeScreen({route, navigation}: ScreenProps<'Notice'>) {
     const [summarizing, setSummarizing] = useState(false);
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [relevanceOpen, setRelevanceOpen] = useState(false);
+    const [opening, setOpening] = useState('');
     const controller = useRef<AbortController | null>(null);
     useEffect(() => () => controller.current?.abort(), []);
     useEffect(() => {
@@ -489,7 +491,15 @@ export function NoticeScreen({route, navigation}: ScreenProps<'Notice'>) {
                             title={file.name}
                             icon="external"
                             subtle
-                            onPress={() => navigation.navigate('Campus', {title: file.name, url: file.url})}
+                            disabled={!!opening}
+                            onPress={() => {
+                                setOpening(file.url);
+                                setError('');
+                                void fetchNoticeBinary(file.url, notice.url)
+                                    .then(({bytes}) => shareBinary(file.name, bytes))
+                                    .catch((e) => setError(errorMessage(e)))
+                                    .finally(() => setOpening(''));
+                            }}
                         />
                     ))}
                 </View>

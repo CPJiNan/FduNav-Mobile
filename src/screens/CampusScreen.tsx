@@ -16,7 +16,7 @@ export function CampusScreen({route, navigation}: ScreenProps<'Campus'>) {
             Platform.OS !== 'web' &&
             new URL(route.params.url).hostname.endsWith('.fudan.edu.cn') &&
             accountSession.state.status === 'signed-in'
-                ? accountSession.openPage(sourceUrl(route.params.url))
+                ? accountSession.openPage(sourceUrl(route.params.url), route.params.title)
                 : WebBrowser.openBrowserAsync(sourceUrl(route.params.url))
         )
             .then(() => {

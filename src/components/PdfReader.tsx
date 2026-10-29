@@ -6,12 +6,16 @@ import {finishPdf, pdfDocument, pdfSnapshot, subscribePdf} from '../services/pdf
 export function PdfReader() {
     const job = useSyncExternalStore(subscribePdf, pdfSnapshot, pdfSnapshot);
     return job ? (
-        <View pointerEvents="none" style={{position: 'absolute', width: 1, height: 1, opacity: 0}}>
+        <View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, opacity: 0}}
+        >
             <WebView
                 key={job.id}
                 source={{html: pdfDocument(job)}}
-                originWhitelist={['about:blank']}
-                onShouldStartLoadWithRequest={(r) => r.url === 'about:blank'}
+                originWhitelist={['*']}
                 onMessage={(event) => {
                     try {
                         const data = JSON.parse(event.nativeEvent.data);
@@ -22,6 +26,7 @@ export function PdfReader() {
                 }}
                 onError={() => finishPdf(job.id)}
                 javaScriptEnabled
+                domStorageEnabled
             />
         </View>
     ) : null;

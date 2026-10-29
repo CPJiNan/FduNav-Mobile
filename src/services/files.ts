@@ -20,6 +20,38 @@ export async function pickJson(): Promise<string | null> {
     return text;
 }
 
+const mimeTypes: Record<string, string> = {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    zip: 'application/zip',
+    rar: 'application/vnd.rar',
+};
+
+export async function shareBinary(name: string, bytes: Uint8Array) {
+    const safe = name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 120) || '附件';
+    const mimeType =
+        mimeTypes[safe.split('.').pop()?.toLowerCase() || ''] || 'application/octet-stream';
+    if (Platform.OS === 'web') {
+        const url = URL.createObjectURL(new Blob([bytes.slice().buffer as ArrayBuffer], {type: mimeType}));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = safe;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        return;
+    }
+    const file = new File(Paths.cache, safe);
+    file.create({overwrite: true});
+    file.write(bytes);
+    if (!(await Sharing.isAvailableAsync())) throw new Error('此设备不支持文件分享。');
+    await Sharing.shareAsync(file.uri, {mimeType, dialogTitle: '打开附件'});
+}
+
 export async function exportJson(name: string, value: unknown) {
     const text = JSON.stringify(value, null, 2);
     if (Platform.OS === 'web') {

@@ -6,6 +6,7 @@ export type BrowserJob = {
     kind: 'challenge' | 'render' | 'page';
     url: string;
     target: string;
+    title?: string;
     jar: CookieJar;
     signal: AbortSignal;
     resolve: (value: CookieJar | string | null) => void;
@@ -27,16 +28,17 @@ export function openSchoolBrowser(
     target: string,
     jar: CookieJar,
     signal: AbortSignal,
+    title?: string,
 ): Promise<CookieJar | string | null> {
     if (!host || signal.aborted) return Promise.reject(new AuthError('已取消学校身份验证。'));
     return new Promise((resolve, reject) =>
-        host!({id: ++nextId, kind, url, target, jar, signal, resolve, reject}),
+        host!({id: ++nextId, kind, url, target, title, jar, signal, resolve, reject}),
     );
 }
 
 export const schoolBrowser = {
-    async open(url: string, jar: CookieJar, signal: AbortSignal) {
-        await openSchoolBrowser('page', url, url, jar, signal);
+    async open(url: string, jar: CookieJar, signal: AbortSignal, title?: string) {
+        await openSchoolBrowser('page', url, url, jar, signal, title);
     },
     challenge(error: AdditionalAuthenticationRequired, jar: CookieJar, signal: AbortSignal) {
         return openSchoolBrowser(

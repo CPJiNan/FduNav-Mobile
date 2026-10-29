@@ -193,9 +193,7 @@ export function SchoolBrowser() {
                     <DialogHeader
                         title={
                             job.kind === 'page'
-                                ? new URL(job.url).hostname === 'ecard.fudan.edu.cn'
-                                    ? '校园卡消费记录'
-                                    : '教学大纲'
+                                ? job.title || new URL(job.url).hostname
                                 : '复旦统一身份认证'
                         }
                         onClose={() => finish(new AuthError('已取消学校身份验证。'))}

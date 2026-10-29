@@ -38,7 +38,7 @@ export interface SessionBrowser {
 
     clear(): Promise<void>;
 
-    open?(url: string, jar: CookieJar, signal: AbortSignal): Promise<void>;
+    open?(url: string, jar: CookieJar, signal: AbortSignal, title?: string): Promise<void>;
 }
 
 const signedOut = (): AccountState => ({
@@ -289,12 +289,17 @@ export class AccountSession {
         });
     }
 
-    async openPage(url: string) {
+    async openPage(url: string, title?: string) {
         return this.exclusive(async () => {
             if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。');
             if (!this.deps.browser.open) throw new AuthError('无法打开学校页面，请重试。');
             try {
-                await this.deps.browser.open(validateUrl(url), this.jar, this.controller.signal);
+                await this.deps.browser.open(
+                    validateUrl(url),
+                    this.jar,
+                    this.controller.signal,
+                    title,
+                );
             } finally {
                 await this.deps.browser.clear().catch(() => {
                 });
