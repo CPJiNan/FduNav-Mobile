@@ -1,3 +1,3 @@
 export function SchoolBrowser() {
-  return null;
+    return null;
 }

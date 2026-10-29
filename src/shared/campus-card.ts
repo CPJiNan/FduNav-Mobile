@@ -1,5 +1,4 @@
-
 export interface CampusCardBalance {
-  balance: string;
-  updatedAt: string;
+    balance: string;
+    updatedAt: string;
 }
