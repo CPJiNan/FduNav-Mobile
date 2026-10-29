@@ -14,6 +14,21 @@ import type {NoticeRelevanceChoice} from '../shared/notices';
 const relevanceText = (value: string | null | undefined) =>
     value === 'related' ? '[@与我有关]' : value === 'maybe' ? '[@可能有关]' : '';
 
+function RelevanceTag({value, size = 12}: { value: string | null | undefined; size?: number }) {
+    const c = useColors();
+    const text = relevanceText(value);
+    if (!text) return null;
+    return (
+        <Label
+            size={size}
+            weight="600"
+            style={{color: value === 'related' ? c.danger : c.muted, marginRight: 8}}
+        >
+            {text}
+        </Label>
+    );
+}
+
 export function NoticesScreen() {
     const {state, change, refreshing, refresh, summaries} = useStore();
     const c = useColors();
@@ -263,7 +278,7 @@ export function NoticesScreen() {
                                     {item.sourceName}
                                 </Label>
                                 <Label size={16} weight="500">
-                                    {relevanceText(item.relevance)}
+                                    <RelevanceTag value={item.relevance}/>
                                     {item.title}
                                     {!item.read && <Label style={{color: c.dot}}> ●</Label>}
                                 </Label>
@@ -399,24 +414,18 @@ export function NoticeScreen({route, navigation}: ScreenProps<'Notice'>) {
                 <Label>返回通知列表</Label>
             </Pressable>
             <Label size={24} weight="600" selectable>
-                {relevanceText(notice.relevance)}
+                <RelevanceTag value={notice.relevance} size={14}/>
                 {notice.title}
             </Label>
             <View style={[styles.row, {flexWrap: 'wrap', gap: 8}]}>
                 <Label muted>{notice.published}</Label>
                 <Label muted>{notice.sourceName}</Label>
+            </View>
+            <View style={[styles.row, {gap: 8}]}>
                 <IconButton
                     name="tag"
                     label="通知相关性"
                     onPress={() => setRelevanceOpen(!relevanceOpen)}
-                />
-                <Button
-                    title="查看原文"
-                    icon="external"
-                    subtle
-                    onPress={() =>
-                        navigation.navigate('Campus', {url: notice.url, title: notice.sourceName})
-                    }
                 />
                 <IconButton
                     name="sparkles"
@@ -427,6 +436,15 @@ export function NoticeScreen({route, navigation}: ScreenProps<'Notice'>) {
                     }}
                 />
             </View>
+            <Button
+                title="查看原文"
+                icon="external"
+                subtle
+                style={{alignSelf: 'flex-start'}}
+                onPress={() =>
+                    navigation.navigate('Campus', {url: notice.url, title: notice.sourceName})
+                }
+            />
             {relevanceOpen && (
                 <Chips
                     value={notice.relevance ?? 'none'}
