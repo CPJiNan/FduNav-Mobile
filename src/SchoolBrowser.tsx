@@ -90,12 +90,18 @@ export function SchoolBrowser() {
     );
     if (!job) return null;
     const script = job.kind === 'render' ? schoolRenderScript(job.id, job.url) : 'true;';
+    const desktop = job.kind === 'render';
     const web = ready ? (
         <WebView
             source={{uri: job.url}}
             style={{flex: 1, backgroundColor: c.surface}}
             originWhitelist={['https://*.fudan.edu.cn', 'https://fudan.edu.cn']}
             cacheEnabled={job.kind === 'page'}
+            userAgent={
+                desktop
+                    ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+                    : undefined
+            }
             sharedCookiesEnabled
             thirdPartyCookiesEnabled
             setSupportMultipleWindows={false}
@@ -207,8 +213,8 @@ export function SchoolBrowser() {
                 position: 'absolute',
                 left: 0,
                 top: 0,
-                width,
-                height,
+                width: desktop ? 1100 : width,
+                height: desktop ? 820 : height,
                 opacity: 0,
                 zIndex: -1,
             }}

@@ -14,7 +14,6 @@ import {
 import {dateAfter} from '../shared/timetable';
 import {calendarEventColor, courseColor} from '../design/timetable-colors';
 
-// 一屏放得下 7 列，行高加大，让卡片里的文字不再挤在窄格里
 const HOUR = 104;
 const AXIS = 26;
 

@@ -4,7 +4,6 @@ import {AuthError} from './auth/protocol';
 export function parseCampusCardBalance(html: string): string {
     const $ = load(html);
     if (!$('.custname').text().trim()) {
-        // 区分「根本没登录/没跳回来」和「页面结构变了」，否则只能看到同一句废话
         if (/id\.fudan\.edu\.cn|统一身份认证|统一身份登录|请输入.*密码/.test(html.slice(0, 20000)))
             throw new AuthError('校园卡页面停在认证页，请刷新并重新完成学校身份验证。');
         throw new AuthError('未能读取校园卡账户：校园卡页面结构可能已更新，请稍后重试。');
