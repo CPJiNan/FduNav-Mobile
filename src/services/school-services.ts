@@ -73,10 +73,11 @@ export async function fetchCard(refresh = false) {
         Date.now() - Date.parse(cachedCard.data.updatedAt) < 300000
     )
         return cachedCard.data;
-    const html = await accountSession.servicePage('https://ecard.fudan.edu.cn/epay', refresh, true);
+    const detailUrl = 'https://ecard.fudan.edu.cn/epay/myepay/index';
+    const balance = parseCampusCardBalance(await accountSession.servicePage(detailUrl, refresh));
     if (JSON.stringify(accountSession.state) !== owner)
         throw new Error('账号已变更，请重新查询校园卡余额。');
-    const data = {balance: parseCampusCardBalance(html), updatedAt: new Date().toISOString()};
+    const data = {balance, updatedAt: new Date().toISOString()};
     cachedCard = {owner, data};
     return data;
 }

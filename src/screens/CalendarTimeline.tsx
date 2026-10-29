@@ -14,7 +14,7 @@ import {
 import {dateAfter} from '../shared/timetable';
 import {calendarEventColor, courseColor} from '../design/timetable-colors';
 
-const HOUR = 104;
+const HOUR = 64;
 const AXIS = 26;
 
 const color = (item: CalendarOccurrence) =>

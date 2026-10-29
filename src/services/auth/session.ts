@@ -251,18 +251,22 @@ export class AccountSession {
             const generation = this.generation;
             try {
                 let page = await this.transport().request(validateUrl(url));
-                if (isAuthUrl(page.url)) {
+                for (let hop = 0; hop < 2 && isAuthUrl(page.url); hop++) {
                     if (!interactive) throw new AuthError('校园卡需要身份验证，请点击刷新后完成验证。');
                     this.jar = await this.deps.browser.challenge(
                         new AdditionalAuthenticationRequired(page.url, url),
                         this.jar,
                         this.controller.signal,
                     );
+                    if (generation !== this.generation)
+                        throw new AuthError('账号已变化，请重新发起请求。');
                     page = await this.transport().request(url);
                 }
                 if (generation !== this.generation) throw new AuthError('账号已变化，请重新发起请求。');
                 if (isAuthUrl(page.url) || new URL(page.url).origin !== new URL(url).origin)
-                    throw new AuthError('学校服务会话已失效，请重试。');
+                    throw new AuthError(
+                        '学校服务会话已失效（' + new URL(page.url).hostname + '），请重试。',
+                    );
                 let html: string | null = null;
                 if (rendered) {
                     try {

@@ -1,7 +1,6 @@
 import {AccountSession, type SavedSession} from './session';
 import {rsaEncryptPassword} from './rsa';
 import {AuthError} from './protocol';
-import {profileBrowser} from './profile-browser.web';
 
 let saved: SavedSession | null = null;
 export const accountSession = new AccountSession({
@@ -43,11 +42,9 @@ export const accountSession = new AccountSession({
             const {openBrowserAsync} = await import('expo-web-browser');
             await openBrowserAsync(url);
         },
-        render: async (url, jar, signal) =>
-            url === 'https://my.fudan.edu.cn/' || url === 'https://fdjwgl.fudan.edu.cn/student/home'
-                ? (await profileBrowser('render', url, url, jar, signal)).html
-                : null,
-        challenge: async (error, jar, signal) =>
-            (await profileBrowser('challenge', error.loginUrl, error.target, jar, signal)).jar,
+        render: async () => null,
+        challenge: async () => {
+            throw new AuthError('无法加载学校认证页面，请检查网络后重试。');
+        },
     },
 });
