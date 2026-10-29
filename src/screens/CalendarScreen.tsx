@@ -410,7 +410,9 @@ export function CalendarScreen({
                     }}
                     onOpen={open}
                     onCreate={(day, startMinute) => nav.navigate('EventEditor', {date: day, startMinute})}
-                    onNavigate={(amount) => setDate(shiftCalendarDate(date, 'week', amount))}
+                    onNavigate={(amount) =>
+                        setDate(shiftCalendarDate(date, view === 'week' ? 'week' : 'day', amount))
+                    }
                 />
             )}
             {view === 'agenda' && (

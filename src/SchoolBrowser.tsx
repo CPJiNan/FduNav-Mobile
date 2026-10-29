@@ -1,6 +1,6 @@
 import {schoolRenderScript} from './services/auth/render-script';
 import React, {useEffect, useRef, useState} from 'react';
-import {ActivityIndicator, Modal, View} from 'react-native';
+import {ActivityIndicator, Modal, useWindowDimensions, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebView} from 'react-native-webview';
 import {type BrowserJob, registerSchoolBrowser} from './services/auth/browser-bridge';
@@ -11,6 +11,7 @@ import {useColors} from './theme';
 
 export function SchoolBrowser() {
     const c = useColors();
+    const {width, height} = useWindowDimensions();
     const [job, setJob] = useState<BrowserJob | null>(null);
     const [ready, setReady] = useState(false);
     const active = useRef<BrowserJob | null>(null);
@@ -71,7 +72,7 @@ export function SchoolBrowser() {
                         job.kind === 'render'
                             ? finish(undefined, null)
                             : finish(new AuthError('学校身份验证超时，请重新登录。')),
-                    job.kind === 'render' ? 20000 : 300000,
+                    job.kind === 'render' ? 30000 : 300000,
                 );
         job.signal.addEventListener('abort', abort);
         if (job.signal.aborted) abort();
@@ -94,7 +95,7 @@ export function SchoolBrowser() {
             source={{uri: job.url}}
             style={{flex: 1, backgroundColor: c.surface}}
             originWhitelist={['https://*.fudan.edu.cn', 'https://fudan.edu.cn']}
-            cacheEnabled={false}
+            cacheEnabled={job.kind === 'page'}
             sharedCookiesEnabled
             thirdPartyCookiesEnabled
             setSupportMultipleWindows={false}
@@ -202,7 +203,15 @@ export function SchoolBrowser() {
             pointerEvents="none"
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
-            style={{position: 'absolute', left: -2, top: -2, width: 1, height: 1, opacity: 0}}
+            style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width,
+                height,
+                opacity: 0,
+                zIndex: -1,
+            }}
         >
             {web}
         </View>

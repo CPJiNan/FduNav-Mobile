@@ -14,10 +14,16 @@ import {
 import {dateAfter} from '../shared/timetable';
 import {calendarEventColor, courseColor} from '../design/timetable-colors';
 
+// 一屏放得下 7 列，行高加大，让卡片里的文字不再挤在窄格里
+const HOUR = 104;
+const AXIS = 26;
+
 const color = (item: CalendarOccurrence) =>
     item.course ? courseColor(item.course) : calendarEventColor(item.event?.id ?? item.key);
 export const eventTime = (item: CalendarOccurrence) =>
     item.allDay ? '全天' : timeLabel(item.startMinute) + '–' + timeLabel(item.endMinute);
+
+const weekdayOf = (day: string) => '周' + calendarWeekdays[new Date(day + 'T00:00:00Z').getUTCDay()];
 
 export function CalendarTimeline({
                                      date,
@@ -39,16 +45,54 @@ export function CalendarTimeline({
     onNavigate: (amount: number) => void;
 }) {
     const c = useColors();
-    const {width, height} = useWindowDimensions();
+    const {height} = useWindowDimensions();
     const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
     const week = Array.from({length: 7}, (_, i) => dateAfter(weekStartDate(date), i));
     const days = mode === 'week' ? week : [date];
-    const contentWidth = mode === 'week' ? Math.max(width - 34, 690) : Math.min(width - 34, 766);
-    const axis = mode === 'week' ? 52 : 36;
+    const allDay = items.filter((item) => item.allDay);
     useEffect(() => {
-        scroll.current?.scrollTo({y: 7 * 64, animated: false});
+        scroll.current?.scrollTo({y: 6 * HOUR, animated: false});
     }, [date, mode]);
-    const event = (item: CalendarOccurrence, timed = false, lane = 0, lanes = 1) => (
+
+    const header = (day: string) => (
+        <Pressable
+            key={day}
+            accessibilityRole="button"
+            accessibilityLabel={day}
+            accessibilityState={{selected: date === day}}
+            onPress={() => onDate(day)}
+            style={{flex: 1, alignItems: 'center', paddingVertical: 4, gap: 1}}
+        >
+            <Label muted size={9} style={{lineHeight: 12}} numberOfLines={1}>
+                {weekdayOf(day)}
+            </Label>
+            <View
+                style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: day === today ? c.accent : 'transparent',
+                    borderWidth: day === date ? 1 : 0,
+                    borderColor: c.accent,
+                }}
+            >
+                <Label
+                    size={11}
+                    weight="500"
+                    style={{lineHeight: 14, color: day === today ? c.onAccent : c.text}}
+                >
+                    {Number(day.slice(8))}
+                </Label>
+            </View>
+            <Label muted size={8} style={{lineHeight: 10}} numberOfLines={1}>
+                {lunarDate(day)}
+            </Label>
+        </Pressable>
+    );
+
+    const card = (item: CalendarOccurrence, timed = false, lane = 0, lanes = 1) => (
         <Pressable
             key={item.key}
             accessibilityRole="button"
@@ -61,18 +105,19 @@ export function CalendarTimeline({
                     borderColor: c.border,
                     borderRadius: 4,
                     overflow: 'hidden',
-                    padding: 5,
-                    paddingLeft: 9,
                 },
                 timed
                     ? {
                         position: 'absolute',
-                        top: (item.startMinute / 60) * 64,
-                        height: ((item.endMinute - item.startMinute) / 60) * 64,
+                        top: (item.startMinute / 60) * HOUR,
+                        height: Math.max(24, ((item.endMinute - item.startMinute) / 60) * HOUR),
                         left: ((lane / lanes) * 100 + '%') as any,
                         width: (100 / lanes + '%') as any,
+                        paddingHorizontal: mode === 'week' ? 3 : 6,
+                        paddingVertical: mode === 'week' ? 3 : 6,
+                        paddingLeft: mode === 'week' ? 5 : 10,
                     }
-                    : {},
+                    : {paddingHorizontal: 3, paddingVertical: 2},
             ]}
         >
             <View
@@ -81,179 +126,182 @@ export function CalendarTimeline({
                     position: 'absolute',
                     top: 0,
                     bottom: 0,
-                    left: 4,
+                    left: mode === 'week' ? 3 : 4,
                     right: 0,
                     backgroundColor: 'rgba(255,255,255,0.3)',
                 }}
             />
-            <Label size={12} weight="600" numberOfLines={timed ? 3 : 1} style={{color: '#252c32'}}>
-                {item.title}
-            </Label>
-            {timed && (
+            {mode === 'week' ? (
                 <>
-                    <Label size={12} style={{color: '#252c32'}}>
-                        {eventTime(item)}
+                    <Label
+                        size={10}
+                        weight="600"
+                        numberOfLines={4}
+                        style={{color: '#252c32', lineHeight: 13}}
+                    >
+                        {item.title}
                     </Label>
                     {!!item.location && (
-                        <Label size={12} style={{color: '#252c32'}}>
+                        <Label size={9} numberOfLines={2} style={{color: '#252c32', lineHeight: 11}}>
                             {item.location}
                         </Label>
                     )}
-                    {item.course && (
-                        <Label size={12} style={{color: '#252c32'}}>
-                            第 {item.course.startUnit}–{item.course.endUnit} 节
-                        </Label>
+                </>
+            ) : (
+                <>
+                    <Label size={12} weight="600" numberOfLines={3} style={{color: '#252c32'}}>
+                        {item.title}
+                    </Label>
+                    {timed && (
+                        <>
+                            <Label size={12} style={{color: '#252c32'}}>
+                                {eventTime(item)}
+                            </Label>
+                            {!!item.location && (
+                                <Label size={12} numberOfLines={2} style={{color: '#252c32'}}>
+                                    {item.location}
+                                </Label>
+                            )}
+                            {item.course && (
+                                <Label size={12} style={{color: '#252c32'}}>
+                                    第 {item.course.startUnit}–{item.course.endUnit} 节
+                                </Label>
+                            )}
+                        </>
                     )}
                 </>
             )}
         </Pressable>
     );
+
     return (
         <View
             style={{
-                height: Math.max(320, height - 250),
+                height: Math.max(360, height - 250),
                 borderWidth: 1,
                 borderColor: c.border,
                 borderRadius: 8,
                 overflow: 'hidden',
             }}
         >
-            <ScrollView
-                horizontal
-                nestedScrollEnabled
-                scrollEnabled={mode === 'week'}
-                showsHorizontalScrollIndicator={mode === 'week'}
-            >
-                <ScrollView
-                    ref={scroll}
-                    nestedScrollEnabled
-                    stickyHeaderIndices={[0]}
-                    style={{width: contentWidth}}
-                    accessibilityLabel={mode === 'week' ? '每周课表' : '当天时间轴'}
-                >
-                    <View style={{backgroundColor: c.surface, zIndex: 5}}>
-                        <View style={{flexDirection: 'row', paddingLeft: axis}}>
-                            {week.map((day) => (
-                                <Pressable
-                                    key={day}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={day}
-                                    accessibilityState={{selected: date === day}}
-                                    onPress={() => onDate(day)}
-                                    style={{
-                                        flex: 1,
-                                        minHeight: 84,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: 2,
-                                    }}
-                                >
-                                    <Label muted size={11}>
-                                        {calendarWeekdays[new Date(day + 'T00:00:00Z').getUTCDay()]}
-                                    </Label>
-                                    <View
-                                        style={{
-                                            width: 28,
-                                            height: 28,
-                                            borderRadius: 99,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: day === today ? c.accent : 'transparent',
-                                            borderWidth: day === date ? 1 : 0,
-                                            borderColor: c.accent,
-                                        }}
-                                    >
-                                        <Label size={16} style={{color: day === today ? c.onAccent : c.text}}>
-                                            {Number(day.slice(8))}
-                                        </Label>
-                                    </View>
-                                    <Label muted size={11}>
-                                        {lunarDate(day)}
-                                    </Label>
-                                </Pressable>
-                            ))}
+            <ScrollView ref={scroll} nestedScrollEnabled stickyHeaderIndices={[0]}>
+                <View style={{backgroundColor: c.surface, zIndex: 5}}>
+                    <View style={[styles.row, {justifyContent: 'space-between', paddingHorizontal: 4}]}>
+                        <IconButton
+                            name="arrow"
+                            label={mode === 'week' ? '上一周' : '上一天'}
+                            disabled={date === '1900-01-01'}
+                            onPress={() => onNavigate(-1)}
+                        />
+                        <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+                            <Label weight="600" size={13} numberOfLines={1}>
+                                {mode === 'week'
+                                    ? `${Number(week[0].slice(5, 7))}/${Number(week[0].slice(8))} – ${Number(week[6].slice(5, 7))}/${Number(week[6].slice(8))}`
+                                    : `${weekdayOf(date)} ${Number(date.slice(5, 7))}月${Number(date.slice(8))}日`}
+                            </Label>
                         </View>
-                        <View style={[styles.row, {justifyContent: 'space-between'}]}>
-                            <IconButton
-                                name="arrow"
-                                label="上一周"
-                                disabled={date === '1900-01-01'}
-                                onPress={() => onNavigate(-1)}
-                            />
-                            <IconButton
-                                name="chevron"
-                                label="下一周"
-                                disabled={date === '2100-12-31'}
-                                onPress={() => onNavigate(1)}
-                            />
+                        <IconButton
+                            name="chevron"
+                            label={mode === 'week' ? '下一周' : '下一天'}
+                            disabled={date === '2100-12-31'}
+                            onPress={() => onNavigate(1)}
+                        />
+                    </View>
+                    {mode === 'week' && (
+                        <View style={{flexDirection: 'row', paddingLeft: AXIS}}>
+                            {days.map((day) => header(day))}
                         </View>
+                    )}
+                    {!!allDay.length && (
                         <View
                             style={{
                                 flexDirection: 'row',
-                                minHeight: 40,
+                                paddingLeft: AXIS,
+                                borderTopWidth: 1,
                                 borderBottomWidth: 1,
                                 borderColor: c.border,
                             }}
                         >
-                            <View style={{width: axis, justifyContent: 'center', alignItems: 'center'}}>
-                                <Label muted size={12}>
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: AXIS,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <Label muted size={8} numberOfLines={1}>
                                     全天
                                 </Label>
                             </View>
                             {days.map((day) => (
-                                <ScrollView
-                                    key={day}
-                                    style={{flex: 1, maxHeight: 110}}
-                                    contentContainerStyle={{gap: 3, padding: 4}}
-                                >
-                                    {items
-                                        .filter((item) => item.date === day && item.allDay)
-                                        .map((item) => event(item))}
-                                </ScrollView>
-                            ))}
-                        </View>
-                    </View>
-                    <View style={{flexDirection: 'row'}}>
-                        <View style={{width: axis}}>
-                            {Array.from({length: 24}, (_, hour) => (
                                 <View
-                                    key={hour}
+                                    key={day}
                                     style={{
-                                        height: 64,
-                                        borderBottomWidth: 1,
+                                        flex: 1,
+                                        gap: 2,
+                                        padding: 2,
+                                        minHeight: 18,
+                                        borderLeftWidth: 1,
                                         borderColor: c.border,
-                                        paddingTop: 4,
-                                        alignItems: 'center',
                                     }}
                                 >
-                                    <Label muted size={11}>
-                                        {timeLabel(hour * 60)}
-                                    </Label>
+                                    {allDay
+                                        .filter((item) => item.date === day)
+                                        .map((item) => card(item))}
                                 </View>
                             ))}
                         </View>
-                        {days.map((day) => (
+                    )}
+                </View>
+                <View style={{flexDirection: 'row'}}>
+                    <View style={{width: AXIS}}>
+                        {Array.from({length: 24}, (_, hour) => (
                             <View
-                                key={day}
-                                style={{flex: 1, height: 24 * 64, borderLeftWidth: 1, borderColor: c.border}}
+                                key={hour}
+                                style={{
+                                    height: HOUR,
+                                    borderBottomWidth: 1,
+                                    borderColor: c.border,
+                                    paddingTop: 3,
+                                    alignItems: 'center',
+                                }}
                             >
-                                {Array.from({length: 24}, (_, hour) => (
-                                    <Pressable
-                                        key={hour}
-                                        accessibilityRole="button"
-                                        accessibilityLabel={day + ' ' + timeLabel(hour * 60) + ' 新建日程'}
-                                        disabled={!calendarDate(day)}
-                                        onPress={() => onCreate(day, hour * 60)}
-                                        style={{height: 64, borderBottomWidth: 1, borderColor: c.border}}
-                                    />
-                                ))}
-                                {layoutCalendarDay(items.filter((item) => item.date === day && !item.allDay)).map(
-                                    ({item, lane, lanes}) => event(item, true, lane, lanes),
-                                )}
+                                <Label muted size={8} numberOfLines={1} style={{lineHeight: 10}}>
+                                    {timeLabel(hour * 60)}
+                                </Label>
                             </View>
                         ))}
                     </View>
-                </ScrollView>
+                    {days.map((day) => (
+                        <View
+                            key={day}
+                            style={{
+                                flex: 1,
+                                height: 24 * HOUR,
+                                borderLeftWidth: 1,
+                                borderColor: c.border,
+                            }}
+                        >
+                            {Array.from({length: 24}, (_, hour) => (
+                                <Pressable
+                                    key={hour}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={day + ' ' + timeLabel(hour * 60) + ' 新建日程'}
+                                    disabled={!calendarDate(day)}
+                                    onPress={() => onCreate(day, hour * 60)}
+                                    style={{height: HOUR, borderBottomWidth: 1, borderColor: c.border}}
+                                />
+                            ))}
+                            {layoutCalendarDay(
+                                items.filter((item) => item.date === day && !item.allDay),
+                            ).map(({item, lane, lanes}) => card(item, true, lane, lanes))}
+                        </View>
+                    ))}
+                </View>
             </ScrollView>
         </View>
     );

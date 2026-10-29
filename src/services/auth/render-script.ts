@@ -73,7 +73,7 @@ export function schoolRenderScript(id: number, url: string) {
                             location.href = origin + '/epay/myepay/index';
                             return;
                         }
-                        if (Date.now() - start < 10000) {
+                        if (Date.now() - start < 20000) {
                             setTimeout(collect, 500);
                             return;
                         }

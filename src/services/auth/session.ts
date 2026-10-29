@@ -1,6 +1,5 @@
 import {CookieJar} from 'tough-cookie';
 import type {AccountState, LoginInput} from '../../shared/accounts';
-import type {MessagePreferences} from '../../shared/message-preferences';
 import {
     AdditionalAuthenticationRequired,
     authenticate,
@@ -10,7 +9,6 @@ import {
     verifySession,
 } from './protocol';
 import {type HttpFetch, SchoolTransport} from './transport';
-import {syncPreferences} from './profile';
 
 export interface SavedSession {
     username: string;
@@ -293,47 +291,6 @@ export class AccountSession {
             if (!this.deps.browser.open) throw new AuthError('无法打开学校页面，请重试。');
             try {
                 await this.deps.browser.open(validateUrl(url), this.jar, this.controller.signal);
-            } finally {
-                await this.deps.browser.clear().catch(() => {
-                });
-            }
-        });
-    }
-
-    async preferences(existing: MessagePreferences) {
-        return this.exclusive(async () => {
-            if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。');
-            const generation = this.generation;
-            const read = async (url: string) => {
-                let page = await this.transport().request(url);
-                if (isAuthUrl(page.url)) {
-                    this.jar = await this.deps.browser.challenge(
-                        new AdditionalAuthenticationRequired(page.url, url),
-                        this.jar!,
-                        this.controller.signal,
-                    );
-                    page = await this.transport().request(url);
-                }
-                if (isAuthUrl(page.url) || new URL(page.url).origin !== new URL(url).origin)
-                    throw new AuthError('学校服务会话已失效，请重试。');
-                return page.text;
-            };
-            try {
-                const render = async () => {
-                    const url = 'https://my.fudan.edu.cn/';
-                    try {
-                        return await this.deps.browser.render(url, this.jar!, this.controller.signal);
-                    } catch (error) {
-                        if (!(error instanceof AdditionalAuthenticationRequired)) throw error;
-                        this.jar = await this.deps.browser.challenge(error, this.jar!, this.controller.signal);
-                        if (generation !== this.generation) throw new AuthError('账号已变化，请重新发起请求。');
-                        return this.deps.browser.render(url, this.jar, this.controller.signal);
-                    }
-                };
-                const value = await syncPreferences(existing, read, render);
-                if (generation !== this.generation) throw new AuthError('账号已变化，请重新发起请求。');
-                await this.persist();
-                return value;
             } finally {
                 await this.deps.browser.clear().catch(() => {
                 });

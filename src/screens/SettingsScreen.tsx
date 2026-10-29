@@ -211,19 +211,6 @@ export function SettingsScreen({route}: { route?: { params?: { section?: string 
                     {section === 'account' && <AccountPanel/>}
                     {section === 'preferences' && (
                         <>
-                            {auth.preferencesLoading && <Label muted>正在读取消息偏好…</Label>}
-                            {!!auth.preferencesError && (
-                                <>
-                                    <Banner message={auth.preferencesError}/>
-                                    <Button
-                                        title="重新读取"
-                                        disabled={auth.preferencesLoading}
-                                        onPress={() =>
-                                            void auth.reloadPreferences().catch((e) => setError(errorMessage(e)))
-                                        }
-                                    />
-                                </>
-                            )}
                             <Select
                                 label="身份"
                                 required
