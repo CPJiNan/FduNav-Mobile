@@ -11,6 +11,8 @@ import {defaultSources} from '../shared/sources';
 import {fetchDetail} from '../services/network';
 import type {NoticeRelevanceChoice} from '../shared/notices';
 import {shareBinary} from '../services/files';
+import {fetchNoticeBinary} from '../services/notice-assets';
+import type {NoticeDetail} from '../shared/notices';
 
 const relevanceText = (value: string | null | undefined) =>
     value === 'related' ? '[@与我有关]' : value === 'maybe' ? '[@可能有关]' : '';
@@ -345,19 +347,21 @@ export function NoticeScreen({route, navigation}: ScreenProps<'Notice'>) {
         if (!detail) {
             setLoading(true);
             setError('');
-            void fetchDetail(notice)
-                .then(async (result) => {
-                    if (active)
-                        await change((s) => ({
-                            ...s,
-                            details: Object.fromEntries([
-                                ...Object.entries(s.details)
-                                    .filter(([key]) => key !== route.params.key)
-                                    .slice(-79),
-                                [route.params.key, result],
-                            ]),
-                        }));
-                })
+            const showDetail = async (result: NoticeDetail) => {
+                if (active)
+                    await change((s) => ({
+                        ...s,
+                        details: Object.fromEntries([
+                            ...Object.entries(s.details)
+                                .filter(([key]) => key !== route.params.key)
+                                .slice(-79),
+                            [route.params.key, result],
+                        ]),
+                    }));
+                if (active) setLoading(false);
+            };
+            void fetchDetail(notice, showDetail)
+                .then(showDetail)
                 .catch((e) => {
                     if (active) setError(errorMessage(e));
                 })

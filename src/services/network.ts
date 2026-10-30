@@ -4,7 +4,7 @@ import {accountSession} from './auth/runtime';
 import {Platform} from 'react-native';
 import type {SourceId} from '../shared/sources';
 import {defaultSources} from '../shared/sources';
-import type {Notice} from '../shared/notices';
+import type {Notice, NoticeDetail} from '../shared/notices';
 import {parseNoticeDetail} from './notice-parser';
 
 export async function fetchHtml(url: string) {
@@ -44,9 +44,10 @@ export async function fetchSource(id: SourceId): Promise<Notice[]> {
     return items.map((n) => ({...n, sourceId: id, sourceName: source.name, read: false}));
 }
 
-export async function fetchDetail(notice: Notice) {
+export async function fetchDetail(notice: Notice, onLoaded?: (detail: NoticeDetail) => Promise<void>) {
     const page = await fetchHtml(notice.url);
     const detail = parseNoticeDetail(page.html, page.url, notice.sourceId as SourceId);
     if (!detail) throw new Error('正文暂时无法读取，请打开原文；部分通知需要校园登录。');
-    return detail.attachments.length ? readNoticePdfs(detail) : detail;
+    if (onLoaded) await onLoaded(detail);
+    return detail.attachments.length ? readNoticePdfs(detail, page.url) : detail;
 }

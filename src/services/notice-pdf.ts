@@ -2,17 +2,21 @@ import type {NoticeDetail} from '../shared/notices';
 import {extractPdfText} from './pdf-reader';
 import {fetchNoticeBinary} from './notice-assets';
 
-export async function readNoticePdfs(detail: NoticeDetail): Promise<NoticeDetail> {
+export async function readNoticePdfs(detail: NoticeDetail, referer?: string): Promise<NoticeDetail> {
     const contents = [detail.content];
-    let failed = detail.attachments.length > 3;
+    const attachments = detail.attachments.filter((attachment) =>
+        !/\.(?:docx?|xlsx?|pptx?|zip|rar|7z|jpe?g|png|gif)(?:$|[?#])/i.test(attachment.name + '?' + attachment.url),
+    );
+    if (!attachments.length) return detail;
+    let failed = attachments.length > 3;
     const deadline = Date.now() + 25000;
-    for (const attachment of detail.attachments.slice(0, 3)) {
+    for (const attachment of attachments.slice(0, 3)) {
         if (Date.now() > deadline) {
             failed = true;
             break;
         }
         try {
-            const {bytes} = await fetchNoticeBinary(attachment.url);
+            const {bytes} = await fetchNoticeBinary(attachment.url, referer);
             if (!new TextDecoder().decode(bytes.subarray(0, 1024)).includes('%PDF-')) throw new Error();
             const text = await extractPdfText(bytes);
             if (text) contents.push(detail.attachments.length > 1 ? attachment.name + '\n' + text : text);

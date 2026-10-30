@@ -68,6 +68,8 @@ export function CalendarScreen({
     const [chooseDate, setChooseDate] = useState(false);
     const [agendaDays, setAgendaDays] = useState(30);
     const [course, setCourse] = useState<CalendarOccurrence | null>(null);
+    const [syllabusError, setSyllabusError] = useState('');
+    useEffect(() => setSyllabusError(''), [course]);
     useEffect(() => setAgendaDays(30), [date, view]);
     const days =
         view === 'week'
@@ -499,12 +501,18 @@ export function CalendarScreen({
                                     </Label>
                                 </Label>
                                 <Label>周次 {course.course?.weeks.filter((w) => w > 0).join('、')} 周</Label>
+                                {!!syllabusError && <Banner message={syllabusError}/>}
                                 <Button
                                     title="查看教学大纲"
                                     subtle
                                     onPress={() => {
                                         const url = course.course && courseSyllabusUrl(course.course);
-                                        if (url) nav.navigate('Campus', {title: course.title, url});
+                                        if (!url) {
+                                            setSyllabusError('这门课程缺少教学班编号，暂时无法直接打开教学大纲。');
+                                            return;
+                                        }
+                                        setCourse(null);
+                                        nav.navigate('Campus', {title: '教学大纲', url});
                                     }}
                                 />
                             </>
