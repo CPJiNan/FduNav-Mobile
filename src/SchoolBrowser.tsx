@@ -61,6 +61,10 @@ export function SchoolBrowser() {
             });
     }
 
+    function close() {
+        finish(active.current?.kind === 'page' ? undefined : new AuthError('已取消学校身份验证。'));
+    }
+
     useEffect(() => {
         if (!job) return;
         const abort = () => finish(new AuthError('已取消学校身份验证。'));
@@ -183,11 +187,7 @@ export function SchoolBrowser() {
         <ActivityIndicator color={c.accent}/>
     );
     return job.kind !== 'render' ? (
-        <Modal
-            onRequestClose={() =>
-                finish(job.kind === 'page' ? undefined : new AuthError('已取消学校身份验证。'))
-            }
-        >
+        <Modal onRequestClose={close}>
             <SafeAreaView style={{flex: 1, backgroundColor: c.surface}}>
                 <View style={{paddingHorizontal: 16}}>
                     <DialogHeader
@@ -196,7 +196,7 @@ export function SchoolBrowser() {
                                 ? job.title || new URL(job.url).hostname
                                 : '复旦统一身份认证'
                         }
-                        onClose={() => finish(new AuthError('已取消学校身份验证。'))}
+                        onClose={close}
                     />
                 </View>
                 {web}

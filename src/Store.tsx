@@ -249,17 +249,27 @@ export function StoreProvider({children}: React.PropsWithChildren) {
             }
             const incoming: MobileState['notices'] = [];
             const failures: Record<string, string> = {};
-            for (let start = 0; start < ids.length; start += 4) {
-                await Promise.all(
-                    ids.slice(start, start + 4).map(async (id) => {
+            const pending = [...ids];
+            await Promise.all(
+                Array.from({length: Math.min(4, pending.length)}, async () => {
+                    while (pending.length && owner === access.current) {
+                        const id = pending.shift()!;
                         try {
-                            incoming.push(...(await fetchSource(id)));
+                            const notices = await fetchSource(id);
+                            if (owner !== access.current) return;
+                            incoming.push(...notices);
+                            await change((s) => {
+                                if (owner !== access.current || s.dataUsername !== owner) return s;
+                                const sourceErrors = {...s.sourceErrors};
+                                delete sourceErrors[id];
+                                return {...s, notices: mergeNotices(s.notices, notices), sourceErrors};
+                            });
                         } catch (e) {
                             failures[id] = errorMessage(e);
                         }
-                    }),
-                );
-            }
+                    }
+                }),
+            );
             if (owner !== access.current) return;
             await change((s) => {
                 if (owner !== access.current || s.dataUsername !== owner) return s;

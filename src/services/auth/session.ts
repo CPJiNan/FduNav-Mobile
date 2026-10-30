@@ -217,10 +217,9 @@ export class AccountSession {
     }
 
     async readPage(url: string) {
+        const {generation, transport} = await this.beginRead();
+        const page = await transport.request(validateUrl(url));
         return this.exclusive(async () => {
-            if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。');
-            const generation = this.generation;
-            const page = await this.transport().request(validateUrl(url));
             if (generation !== this.generation) throw new AuthError('账号已变化，请重新发起请求。');
             if (isAuthUrl(page.url)) {
                 this.jar = null;
@@ -234,10 +233,9 @@ export class AccountSession {
     }
 
     async readBinary(url: string, referer?: string) {
+        const {generation, transport} = await this.beginRead();
+        const data = await transport.download(url, referer);
         return this.exclusive(async () => {
-            if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。');
-            const generation = this.generation;
-            const data = await this.transport().download(url, referer);
             if (generation !== this.generation) throw new AuthError('账号已变化，请重新发起请求。');
             if (isAuthUrl(data.url)) throw new AuthError('登录已过期，请重新登录。');
             await this.persist();
@@ -314,6 +312,13 @@ export class AccountSession {
 
     private transport(jar = this.jar) {
         return new SchoolTransport(this.deps.fetch, jar ?? new CookieJar(), this.controller.signal);
+    }
+
+    private beginRead() {
+        return this.exclusive(async () => {
+            if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。');
+            return {generation: this.generation, transport: this.transport()};
+        });
     }
 
     private exclusive<T>(work: () => Promise<T>): Promise<T> {
